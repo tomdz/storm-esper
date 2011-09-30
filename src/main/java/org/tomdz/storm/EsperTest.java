@@ -16,7 +16,7 @@ public class EsperTest
         TwitterSpout spout = new TwitterSpout(username, pwd);
         EsperBolt bolt = new EsperBolt.Builder()
                                       .addInputAlias(1, 1, "Tweets")
-                                      .setAnonymousOutput("tps", "maxRetweets")
+                                      .setAnonymousOutput(1, "tps", "maxRetweets")
                                       .addStatement("select count(*) as tps, max(retweetCount) as maxRetweets from Tweets.win:time_batch(1 sec)")
                                       .build();
 
