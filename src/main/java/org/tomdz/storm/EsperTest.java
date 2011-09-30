@@ -3,7 +3,6 @@ package org.tomdz.storm;
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.tuple.Fields;
 import backtype.storm.utils.Utils;
 
 public class EsperTest
@@ -15,8 +14,11 @@ public class EsperTest
 
         TopologyBuilder builder = new TopologyBuilder();
         TwitterSpout spout = new TwitterSpout(username, pwd);
-        EsperBolt bolt = new EsperBolt(new Fields("tps", "maxRetweets"),
-                                       "select count(*) as tps, max(retweetCount) as maxRetweets from Storm.win:time_batch(1 sec)");
+        EsperBolt bolt = new EsperBolt.Builder()
+                                      .addInputAlias(1, 1, "Tweets")
+                                      .setAnonymousOutput("tps", "maxRetweets")
+                                      .addStatement("select count(*) as tps, max(retweetCount) as maxRetweets from Tweets.win:time_batch(1 sec)")
+                                      .build();
 
         builder.setSpout(1, spout);
         builder.setBolt(2, bolt).shuffleGrouping(1);

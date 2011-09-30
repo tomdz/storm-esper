@@ -51,7 +51,9 @@ public class TwitterSpout implements IRichSpout, StatusListener
     }
 
     @Override
-    public void open(Map conf, TopologyContext context, SpoutOutputCollector collector)
+    public void open(@SuppressWarnings("rawtypes") Map conf,
+                     TopologyContext context,
+                     SpoutOutputCollector collector)
     {
         this.queue = new ArrayBlockingQueue<Status>(1000);
         this.collector = collector;

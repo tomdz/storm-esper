@@ -28,27 +28,80 @@ public class EsperBolt implements IRichBolt, UpdateListener
 {
     private static final long serialVersionUID = 1L;
 
-    private final Fields outputFields;
-    private final String[] statements;
+    public static final class Builder
+    {
+        private final Map<String, String> inputAliases = new HashMap<String, String>();
+        private final Map<String, Fields> outputTypes = new LinkedHashMap<String, Fields>();
+        private final List<String> statements = new ArrayList<String>();
+
+        public Builder addInputAlias(int componentId, int streamId, String name)
+        {
+            inputAliases.put(componentId + "-" + streamId, name);
+            return this;
+        }
+
+        public Builder addNamedOutput(String eventTypeName, String... fields)
+        {
+            outputTypes.put(eventTypeName, new Fields(fields));
+            return this;
+        }
+
+        public Builder setAnonymousOutput(String... fields)
+        {
+            outputTypes.put(null, new Fields(fields));
+            return this;
+        }
+
+        public Builder addStatement(String stmt)
+        {
+            statements.add(stmt);
+            return this;
+        }
+
+        public EsperBolt build()
+        {
+            return new EsperBolt(inputAliases, outputTypes, statements);
+        }
+    }
+
+    private final Map<String, String> inputAliases;
+    private final Map<String, Fields> eventTypeFieldsMap;
+    private final Map<String, Integer> eventTypeStreamIdMap;
+    private final List<String> statements;
+    private transient EPServiceProvider esperSink;
     private transient EPRuntime runtime;
     private transient EPAdministrator admin;
     private transient OutputCollector collector;
     private transient boolean singleEventType;
 
-    public EsperBolt(Fields outputFields, String... esperStmts)
+    private EsperBolt(Map<String, String> inputAliases, Map<String, Fields> eventTypeFieldsMap, List<String> statements)
     {
-        this.outputFields = outputFields;
-        this.statements = esperStmts;
-    }
-    
-    @Override
-    public void declareOutputFields(OutputFieldsDeclarer declarer)
-    {
-        declarer.declare(outputFields);
+        this.inputAliases = new HashMap<String, String>(inputAliases);
+        this.eventTypeFieldsMap = new LinkedHashMap<String, Fields>(eventTypeFieldsMap);
+        this.eventTypeStreamIdMap = new HashMap<String, Integer>(eventTypeFieldsMap.size());
+        this.statements = new ArrayList<String>(statements);
+
+        int idx = 1;
+
+        for (String outputType : eventTypeFieldsMap.keySet()) {
+            eventTypeStreamIdMap.put(outputType, idx++);
+        }
     }
 
     @Override
-    public void prepare(Map conf, TopologyContext context, OutputCollector collector)
+    public void declareOutputFields(OutputFieldsDeclarer declarer)
+    {
+        for (Map.Entry<String, Integer> entry : eventTypeStreamIdMap.entrySet()) {
+            Fields fields = eventTypeFieldsMap.get(entry.getKey());
+
+            declarer.declareStream(entry.getValue(), fields);
+        }
+    }
+
+    @Override
+    public void prepare(@SuppressWarnings("rawtypes") Map conf,
+                        TopologyContext context,
+                        OutputCollector collector)
     {
         this.collector = collector;
 
@@ -56,8 +109,8 @@ public class EsperBolt implements IRichBolt, UpdateListener
 
         setupEventTypes(context, configuration);
 
-        EPServiceProvider esperSink = EPServiceProviderManager.getDefaultProvider(configuration);
-
+        this.esperSink = EPServiceProviderManager.getDefaultProvider(configuration);
+        this.esperSink.initialize();
         this.runtime = esperSink.getEPRuntime();
         this.admin = esperSink.getEPAdministrator();
 
@@ -69,12 +122,17 @@ public class EsperBolt implements IRichBolt, UpdateListener
     }
 
     private String getEventTypeName(int componentId, int streamId) {
-        if (singleEventType) {
-            return "Storm";
+        String alias = inputAliases.get(componentId + "-" + streamId);
+
+        if (alias == null) {
+            if (singleEventType) {
+                alias = "Storm";
+            }
+            else {
+                alias = String.format("Storm_%d_%d", componentId, streamId);
+            }
         }
-        else {
-            return String.format("Storm_%d_%d", componentId, streamId);
-        }
+        return alias;
     }
     
     private void setupEventTypes(TopologyContext context, Configuration configuration)
@@ -122,23 +180,38 @@ public class EsperBolt implements IRichBolt, UpdateListener
     {
         if (newEvents != null) {
             for (EventBean newEvent : newEvents) {
-                collector.emit(toTuple(newEvent));
+                String eventType = newEvent.getEventType().getName();
+                Integer streamId = eventTypeStreamIdMap.get(eventType);
+
+                if (streamId == null) {
+                    // anonymous event
+                    eventType = null;
+                    streamId = eventTypeStreamIdMap.get(null);
+                }
+                if (streamId != null) {
+                    Fields fields = eventTypeFieldsMap.get(eventType);
+                    collector.emit(streamId.intValue(), toTuple(newEvent, fields));
+                }
             }
         }
     }
 
-    private List<Object> toTuple(EventBean event)
+    private List<Object> toTuple(EventBean event, Fields fields)
     {
-        int numFields = outputFields.size();
+        int numFields = fields.size();
         List<Object> tuple = new ArrayList<Object>(numFields);
 
         for (int idx = 0; idx < numFields; idx++) {
-            tuple.add(event.get(outputFields.get(idx)));
+            tuple.add(event.get(fields.get(idx)));
         }
         return tuple;
     }
     
     @Override
     public void cleanup()
-    {}
+    {
+        if (esperSink != null) {
+            esperSink.destroy();
+        }
+    }
 }
