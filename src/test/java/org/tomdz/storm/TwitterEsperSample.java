@@ -5,7 +5,7 @@ import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
 import backtype.storm.utils.Utils;
 
-public class EsperTest
+public class TwitterEsperSample
 {
     public static void main(String[] args)
     {
