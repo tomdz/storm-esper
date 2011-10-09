@@ -30,9 +30,9 @@ public class EsperBolt implements IRichBolt, UpdateListener
 
     public static final class Builder
     {
-        private final Map<String, String> inputAliases = new HashMap<String, String>();
-        private final Map<String, Fields> eventTypeFieldsMap = new HashMap<String, Fields>();
-        private final Map<String, Integer> eventTypeStreamIdMap = new HashMap<String, Integer>();
+        private final Map<String, String> inputAliases = new LinkedHashMap<String, String>();
+        private final Map<String, Fields> eventTypeFieldsMap = new LinkedHashMap<String, Fields>();
+        private final Map<String, Integer> eventTypeStreamIdMap = new LinkedHashMap<String, Integer>();
         private final List<String> statements = new ArrayList<String>();
 
         public Builder addInputAlias(int componentId, int streamId, String name)
@@ -82,10 +82,35 @@ public class EsperBolt implements IRichBolt, UpdateListener
                       Map<String, Integer> eventTypeStreamIdMap,
                       List<String> statements)
     {
-        this.inputAliases = new HashMap<String, String>(inputAliases);
-        this.eventTypeFieldsMap = new HashMap<String, Fields>(eventTypeFieldsMap);
-        this.eventTypeStreamIdMap = new HashMap<String, Integer>(eventTypeStreamIdMap);
+        this.inputAliases = new LinkedHashMap<String, String>(inputAliases);
+        this.eventTypeFieldsMap = new LinkedHashMap<String, Fields>(eventTypeFieldsMap);
+        this.eventTypeStreamIdMap = new LinkedHashMap<String, Integer>(eventTypeStreamIdMap);
         this.statements = new ArrayList<String>(statements);
+    }
+
+    public List<String> getEventTypes()
+    {
+        return new ArrayList<String>(eventTypeFieldsMap.keySet());
+    }
+
+    public Fields getFieldsForEventType(String eventType)
+    {
+        return eventTypeFieldsMap.get(eventType);
+    }
+
+    public Integer getStreamIdForEventType(String eventType)
+    {
+        return eventTypeStreamIdMap.get(eventType);
+    }
+
+    public String getEventTypeForStreamId(int streamId)
+    {
+        for (Map.Entry<String, Integer> entry : eventTypeStreamIdMap.entrySet()) {
+            if (entry.getValue().intValue() == streamId) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     @Override
