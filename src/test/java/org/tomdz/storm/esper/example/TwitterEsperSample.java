@@ -1,4 +1,4 @@
-package org.tomdz.storm.esper;
+package org.tomdz.storm.esper.example;
 
 import org.tomdz.storm.esper.EsperBolt;
 

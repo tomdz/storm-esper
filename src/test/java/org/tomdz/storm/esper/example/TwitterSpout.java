@@ -1,4 +1,4 @@
-package org.tomdz.storm.esper;
+package org.tomdz.storm.esper.example;
 
 import static backtype.storm.utils.Utils.tuple;
 import java.util.Map;
