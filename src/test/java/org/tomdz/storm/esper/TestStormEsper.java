@@ -1,4 +1,4 @@
-package org.tomdz.storm;
+package org.tomdz.storm.esper;
 
 import static backtype.storm.utils.Utils.tuple;
 import static com.jayway.awaitility.Awaitility.await;
@@ -15,6 +15,7 @@ import java.util.concurrent.Callable;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.tomdz.storm.esper.EsperBolt;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;

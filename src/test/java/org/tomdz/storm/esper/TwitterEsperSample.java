@@ -1,4 +1,6 @@
-package org.tomdz.storm;
+package org.tomdz.storm.esper;
+
+import org.tomdz.storm.esper.EsperBolt;
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;

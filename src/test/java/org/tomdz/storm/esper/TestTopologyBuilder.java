@@ -1,6 +1,8 @@
-package org.tomdz.storm;
+package org.tomdz.storm.esper;
 
 import java.util.List;
+
+import org.tomdz.storm.esper.EsperBolt;
 
 import backtype.storm.generated.StormTopology;
 import backtype.storm.topology.InputDeclarer;
