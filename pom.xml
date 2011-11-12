@@ -9,7 +9,7 @@
   <groupId>org.tomdz.storm</groupId>
   <artifactId>storm-esper</artifactId>
   <name>storm-esper</name>
-  <version>0.5.4.1-SNAPSHOT</version>
+  <version>0.5.4.1</version>
   <packaging>jar</packaging>
   <description>Storm + Esper integration</description>
   <licenses>
