@@ -54,7 +54,7 @@
          <enabled>true</enabled>
        </releases>
        <snapshots>
-         <enabled>false</enabled>
+         <enabled>true</enabled>
        </snapshots>
     </repository>
     <repository>
@@ -62,7 +62,7 @@
        <name>twitter4j.org Repository</name>
        <url>http://twitter4j.org/maven2</url>
        <releases>
-         <enabled>false</enabled>
+         <enabled>true</enabled>
        </releases>
        <snapshots>
          <enabled>true</enabled>
