@@ -9,13 +9,13 @@
   <groupId>org.tomdz.storm</groupId>
   <artifactId>storm-esper</artifactId>
   <name>storm-esper</name>
-  <version>0.5.5-SNAPSHOT</version>
+  <version>0.5.4.1-SNAPSHOT</version>
   <packaging>jar</packaging>
   <description>Storm + Esper integration</description>
   <licenses>
     <license>
-      <name>The Apache Software License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <name>GNU General Public License, version 2</name>
+      <url>http://www.opensource.org/licenses/gpl-2.0.php</url>
       <distribution>repo</distribution>
     </license>
   </licenses>

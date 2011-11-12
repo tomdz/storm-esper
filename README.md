@@ -2,6 +2,10 @@
 
 A library to integrate [Esper](http://esper.codehaus.org) with [Storm](https://github.com/nathanmarz/storm).
 
+## License
+
+Esper is GPLv2 licensed, which means that this library is GPLv2 licensed, as well. You can find the license [here](http://www.opensource.org/licenses/gpl-2.0.php).
+
 ## Description
 
 The `storm-esper` library provides a [Bolt](https://github.com/nathanmarz/storm/wiki/Concepts) that allows you to use Esper queries on Storm data streams.
