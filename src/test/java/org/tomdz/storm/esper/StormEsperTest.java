@@ -5,6 +5,8 @@ import static com.jayway.awaitility.Awaitility.await;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,6 +42,17 @@ public class StormEsperTest
         cluster.shutdown();
     }
 
+    private int getFreePort() throws IOException
+    {
+        ServerSocket socket = new ServerSocket(0);
+
+        int port = socket.getLocalPort();
+
+        socket.close();
+
+        return port;
+    }
+    
     private void runTest(final List<TestSpout> spouts,
                          final EsperBolt bolt,
                          final Event... expectedData) throws Exception
@@ -50,7 +63,10 @@ public class StormEsperTest
                                                                 .build();
 
         Config conf = new Config();
+
         conf.setDebug(true);
+        conf.put(Config.STORM_ZOOKEEPER_PORT, getFreePort());
+        conf.put(Config.NIMBUS_THRIFT_PORT, getFreePort());
 
         cluster.submitTopology("test", conf, topology);
 
