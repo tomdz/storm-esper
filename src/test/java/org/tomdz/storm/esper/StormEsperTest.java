@@ -28,6 +28,7 @@ import backtype.storm.tuple.Tuple;
 @Test
 public class StormEsperTest
 {
+    private static final int ZOOKEEPER_PORT = 2181;
     private LocalCluster cluster;
 
     @BeforeMethod(alwaysRun = true)
@@ -37,8 +38,9 @@ public class StormEsperTest
     }
 
     @AfterMethod(alwaysRun = true)
-    public void tearDown()
+    public void tearDown() throws Exception
     {
+        cluster.killTopology("test");
         cluster.shutdown();
     }
 
@@ -89,7 +91,7 @@ public class StormEsperTest
             expectedForType.add(event.data);
         }
         for (Tuple tuple : gatheringBolt.getGatheredData()) {
-            int streamId = tuple.getSourceStreamId();
+            String streamId = tuple.getSourceStreamId();
             String eventType = bolt.getEventTypeForStreamId(streamId);
             Fields fields = bolt.getFieldsForEventType(eventType);
 
@@ -110,14 +112,14 @@ public class StormEsperTest
     {
         TestSpout spout = new TestSpout(new Fields("a", "b"), tuple(4, 1), tuple(2, 3), tuple(1, 2), tuple(3, 4));
         EsperBolt esperBolt = new EsperBolt.Builder()
-                                           .addInputAlias(1, 1, "Test")
-                                           .setAnonymousOutput(1, "min", "max")
+                                           .addInputAlias("spout1", "default", "Test")
+                                           .setAnonymousOutput("default", "min", "max")
                                            .addStatement("select max(a) as max, min(b) as min from Test.win:length_batch(4)")
                                            .build();
 
         runTest(Arrays.asList(spout),
                 esperBolt,
-                new Event(esperBolt.getEventTypeForStreamId(1), 1, 4));
+                new Event(esperBolt.getEventTypeForStreamId("default"), 1, 4));
     }
 
     @SuppressWarnings("unchecked")
@@ -125,9 +127,9 @@ public class StormEsperTest
     {
         TestSpout spout = new TestSpout(new Fields("a", "b"), tuple(4, 1), tuple(2, 3), tuple(1, 2), tuple(3, 4));
         EsperBolt esperBolt = new EsperBolt.Builder()
-                                           .addInputAlias(1, 1, "Test")
-                                           .addNamedOutput(1, "MaxValue", "max")
-                                           .addNamedOutput(2, "MinValue", "min")
+                                           .addInputAlias("spout1", "default", "Test")
+                                           .addNamedOutput("stream1", "MaxValue", "max")
+                                           .addNamedOutput("stream2", "MinValue", "min")
                                            .addStatement("insert into MaxValue select max(a) as max from Test.win:length_batch(4)")
                                            .addStatement("insert into MinValue select min(b) as min from Test.win:length_batch(4)")
                                            .build();
@@ -143,15 +145,15 @@ public class StormEsperTest
         TestSpout spout1 = new TestSpout(new Fields("a"), tuple(4), tuple(2), tuple(1), tuple(3));
         TestSpout spout2 = new TestSpout(new Fields("b"), tuple(1), tuple(3), tuple(2), tuple(4));
         EsperBolt esperBolt = new EsperBolt.Builder()
-                                           .addInputAlias(1, 1, "TestA")
-                                           .addInputAlias(2, 1, "TestB")
-                                           .setAnonymousOutput(1, "min", "max")
+                                           .addInputAlias("spout1", "default", "TestA")
+                                           .addInputAlias("spout2", "default", "TestB")
+                                           .setAnonymousOutput("default", "min", "max")
                                            .addStatement("select max(a) as max, min(b) as min from TestA.win:length_batch(4), TestB.win:length_batch(4)")
                                            .build();
 
         runTest(Arrays.asList(spout1, spout2),
                 esperBolt,
-                new Event(esperBolt.getEventTypeForStreamId(1), 1, 4));
+                new Event(esperBolt.getEventTypeForStreamId("default"), 1, 4));
     }
 
     @SuppressWarnings("unchecked")
@@ -159,13 +161,13 @@ public class StormEsperTest
     {
         TestSpout spout = new TestSpout(new Fields("a", "b"), tuple(4, 1), tuple(2, 3), tuple(1, 2), tuple(3, 4));
         EsperBolt esperBolt = new EsperBolt.Builder()
-                                           .setAnonymousOutput(1, "min", "max")
-                                           .addStatement("select max(a) as max, min(b) as min from Storm.win:length_batch(4)")
+                                           .setAnonymousOutput("stream1", "min", "max")
+                                           .addStatement("select max(a) as max, min(b) as min from spout1_default.win:length_batch(4)")
                                            .build();
 
         runTest(Arrays.asList(spout),
                 esperBolt,
-                new Event(esperBolt.getEventTypeForStreamId(1), 1, 4));
+                new Event(esperBolt.getEventTypeForStreamId("default"), 1, 4));
     }
 
     @SuppressWarnings("unchecked")
@@ -174,28 +176,28 @@ public class StormEsperTest
         TestSpout spout1 = new TestSpout(new Fields("a"), tuple(4), tuple(2), tuple(1), tuple(3));
         TestSpout spout2 = new TestSpout(new Fields("b"), tuple(1), tuple(3), tuple(2), tuple(4));
         EsperBolt esperBolt = new EsperBolt.Builder()
-                                           .addInputAlias(1, 1, "TestA")
-                                           .setAnonymousOutput(1, "min", "max")
-                                           .addStatement("select max(a) as max, min(b) as min from TestA.win:length_batch(4), Storm_2_1.win:length_batch(4)")
+                                           .addInputAlias("spout1", "default", "TestA")
+                                           .setAnonymousOutput("default", "min", "max")
+                                           .addStatement("select max(a) as max, min(b) as min from TestA.win:length_batch(4), spout2_default.win:length_batch(4)")
                                            .build();
 
         runTest(Arrays.asList(spout1, spout2),
                 esperBolt,
-                new Event(esperBolt.getEventTypeForStreamId(1), 1, 4));
+                new Event(esperBolt.getEventTypeForStreamId("default"), 1, 4));
     }
 
-    // Can't test this yet because can't catch the error ?
+    // Can't test this yet because we can't catch the error ?
     @Test(enabled = false)
     public void testNoSuchSpout() throws Exception
     {
         EsperBolt esperBolt = new EsperBolt.Builder()
-                                           .setAnonymousOutput(1, "min", "max")
-                                           .addStatement("select max(a) as max, min(b) as min from Storm.win:length_batch(4)")
+                                           .setAnonymousOutput("default", "min", "max")
+                                           .addStatement("select max(a) as max, min(b) as min from spout1_default.win:length_batch(4)")
                                            .build();
 
         runTest(new ArrayList<TestSpout>(),
                 esperBolt,
-                new Event(esperBolt.getEventTypeForStreamId(1), 1, 4));
+                new Event(esperBolt.getEventTypeForStreamId("default"), 1, 4));
     }
     // TODO: more tests
     // adding alias for undefined spout

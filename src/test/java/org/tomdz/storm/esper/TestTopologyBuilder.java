@@ -16,7 +16,7 @@ public class TestTopologyBuilder
     public TestTopologyBuilder addSpouts(List<TestSpout> spouts)
     {
         for (TestSpout spout : spouts) {
-            builder.setSpout(counter++, spout);
+            builder.setSpout("spout" + counter++, spout);
         }
         return this;
     }
@@ -24,12 +24,13 @@ public class TestTopologyBuilder
     public TestTopologyBuilder setBolts(EsperBolt esperBolt, GatheringBolt gatheringBolt)
     {
         int esperBoltId = counter++;
-        InputDeclarer declarer = builder.setBolt(esperBoltId, esperBolt);
+        InputDeclarer declarer = builder.setBolt("bolt" + esperBoltId, esperBolt);
         for (int id = 1; id < esperBoltId; id++) {
-            declarer = declarer.shuffleGrouping(id);
+            declarer = declarer.shuffleGrouping("spout" + id);
         }
         for (String eventType : esperBolt.getEventTypes()) {
-            builder.setBolt(counter++, gatheringBolt).shuffleGrouping(esperBoltId, esperBolt.getStreamIdForEventType(eventType));
+            builder.setBolt("bolt" + counter++, gatheringBolt)
+                   .shuffleGrouping("bolt" + esperBoltId, esperBolt.getStreamIdForEventType(eventType));
         }
         return this;
     }
