@@ -1,9 +1,11 @@
 package org.tomdz.storm.esper.example;
 
-import static backtype.storm.utils.Utils.tuple;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import backtype.storm.spout.SpoutOutputCollector;
+import backtype.storm.task.TopologyContext;
+import backtype.storm.topology.OutputFieldsDeclarer;
+import backtype.storm.topology.base.BaseRichSpout;
+import backtype.storm.tuple.Fields;
+import backtype.storm.utils.Utils;
 import twitter4j.Status;
 import twitter4j.StatusDeletionNotice;
 import twitter4j.StatusListener;
@@ -11,14 +13,14 @@ import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
-import backtype.storm.spout.SpoutOutputCollector;
-import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichSpout;
-import backtype.storm.topology.OutputFieldsDeclarer;
-import backtype.storm.tuple.Fields;
-import backtype.storm.utils.Utils;
 
-public class TwitterSpout implements IRichSpout, StatusListener
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+
+import static backtype.storm.utils.Utils.tuple;
+
+public class TwitterSpout extends BaseRichSpout implements StatusListener
 {
     private static final long serialVersionUID = 1L;
 
@@ -34,11 +36,6 @@ public class TwitterSpout implements IRichSpout, StatusListener
         this.pwd = pwd;
     }
 
-    @Override
-    public boolean isDistributed()
-    {
-        return false;
-    }
 
     @Override
     public void ack(Object arg0)

@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.Map;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichSpout;
+import backtype.storm.topology.base.BaseRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 
-public class TestSpout implements IRichSpout
+public class TestSpout extends BaseRichSpout
 {
     private static final long serialVersionUID = 1L;
 
@@ -21,12 +21,6 @@ public class TestSpout implements IRichSpout
     {
         this.fields = fields;
         this.data = data;
-    }
-
-    @Override
-    public boolean isDistributed()
-    {
-        return false;
     }
 
     @Override

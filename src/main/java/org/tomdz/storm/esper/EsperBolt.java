@@ -10,10 +10,10 @@ import java.util.Set;
 import backtype.storm.generated.GlobalStreamId;
 import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
-import backtype.storm.topology.IRichBolt;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.topology.base.BaseRichBolt;
 
 import com.espertech.esper.client.Configuration;
 import com.espertech.esper.client.EPAdministrator;
@@ -24,7 +24,7 @@ import com.espertech.esper.client.EPStatement;
 import com.espertech.esper.client.EventBean;
 import com.espertech.esper.client.UpdateListener;
 
-public class EsperBolt implements IRichBolt, UpdateListener
+public class EsperBolt extends BaseRichBolt implements UpdateListener
 {
     private static final long serialVersionUID = 1L;
 
