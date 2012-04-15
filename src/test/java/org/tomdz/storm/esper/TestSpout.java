@@ -33,7 +33,6 @@ public class TestSpout extends BaseRichSpout
     public void nextTuple()
     {
         if (curIdx < data.length) {
-            System.err.println("Emitting tuple " + data[curIdx]);
             collector.emit(data[curIdx++]);
         }
     }

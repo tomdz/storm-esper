@@ -35,6 +35,11 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
         private final Map<String, String> eventTypeStreamIdMap = new LinkedHashMap<String, String>();
         private final List<String> statements = new ArrayList<String>();
 
+        public Builder addInputAlias(String componentId, String name)
+        {
+            return addInputAlias(componentId, "default", name);
+        }
+
         public Builder addInputAlias(String componentId, String streamId, String name)
         {
             inputAliases.put(componentId + "-" + streamId, name);
@@ -134,7 +139,7 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
 
         setupEventTypes(context, configuration);
 
-        this.esperSink = EPServiceProviderManager.getDefaultProvider(configuration);
+        this.esperSink = EPServiceProviderManager.getProvider(this.toString(), configuration);
         this.esperSink.initialize();
         this.runtime = esperSink.getEPRuntime();
         this.admin = esperSink.getEPAdministrator();
@@ -146,7 +151,8 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
         }
     }
 
-    private String getEventTypeName(String componentId, String streamId) {
+    private String getEventTypeName(String componentId, String streamId)
+    {
         String alias = inputAliases.get(componentId + "-" + streamId);
 
         if (alias == null) {
@@ -210,6 +216,7 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
                 }
                 if (streamId != null) {
                     Fields fields = eventTypeFieldsMap.get(eventType);
+
                     collector.emit(streamId, toTuple(newEvent, fields));
                 }
             }

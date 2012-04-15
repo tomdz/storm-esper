@@ -30,6 +30,7 @@ public class GatheringBolt extends BaseRichBolt
     public void execute(Tuple input)
     {
         Tuple newTuple = new Tuple(context, input.getValues(), input.getSourceTask(), input.getSourceStreamId());
+
         tuples.add(newTuple);
     }
 
