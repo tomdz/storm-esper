@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Storm-esper by tomdz</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Storm-esper</h1>
+        <p>Storm - Esper integration experiment</p>
+        <p class="view"><a href="https://github.com/tomdz/storm-esper">View the Project on GitHub <small>tomdz/storm-esper</small></a></p>
+        <ul>
+          <li><a href="https://github.com/tomdz/storm-esper/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/tomdz/storm-esper/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/tomdz/storm-esper">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>Storm-Esper</h1>
+
+<p>A library to integrate <a href="http://esper.codehaus.org">Esper</a> with <a href="https://github.com/nathanmarz/storm">Storm</a>.</p>
+
+<h2>License</h2>
+
+<p>Esper is GPLv2 licensed, which means that this library is GPLv2 licensed, as well. You can find the license
+<a href="http://www.opensource.org/licenses/gpl-2.0.php">here</a>.</p>
+
+<h2>Description</h2>
+
+<p>The <code>storm-esper</code> library provides a <a href="https://github.com/nathanmarz/storm/wiki/Concepts">bolt</a> that allows
+you to use Esper queries on Storm data streams.</p>
+
+<p>The bolt is created via a builder:</p>
+
+<pre><code>EsperBolt esperBolt =
+    new EsperBolt.Builder()
+                 .inputs()
+                    .aliasComponent("some-spout")
+                    .withFields("a", "b")
+                    .ofType(Integer.class)
+                    .toEventType("Test")
+                 .outputs()
+                    .outputs().onDefaultStream().emit("min", "max")
+                 .statements()
+                    .add("select max(a) as max, min(b) as min from Test.win:length_batch(4)")
+                 .build();
+</code></pre>
+
+<h3><code>inputs</code></h3>
+
+<p>The <code>inputs</code> section allows you to define aliases for storm streams and type hints. An input alias defines an
+alias for a Storm stream that can be used in the Esper queries instead of the automatically generated one.
+By default, the bolt will assign the event name <code>&lt;component id&gt;_&lt;stream id&gt;</code> where <code>component id</code> is the name
+of the spout/bolt that generates the data to be fed into the Esper bolt, and <code>stream id</code> is the id of the
+specific stream that the Esper bolt is connected to (if the source spout/bolt only has one output, then this
+is usually <code>default</code>). The <code>aliasComponent</code> and <code>aliasStream</code> methods allows to define a different name for a
+specific stream of a specific component (<code>default</code> in the case of <code>aliasComponent</code>). E.g. in the example
+the stream <code>default</code> of the component <code>some-spout</code> was mapped to the Esper event type <code>Test</code>.
+Type hints are necessary to give Esper enough information about how to deal with properties of event types.
+Storm streams are untyped in the sense that Storm itself does not maintain type information for the individual
+fields in a tuple. On the other hand, Esper requires strongly typed event type definitions. By default,
+<code>storm-esper</code> will use <code>Object</code> for all properties which works fine for counting, <code>max</code> and <code>min</code>, etc. However
+for Esper functions that require numbers (such as <code>sum</code>) this does not work and you'll need to define a type
+hint. In the example above, fields <code>a</code> and <code>b</code> of the tuples coming from <code>some-spout</code> are declared to be of
+type <code>Integer</code> (which is equivalent to <code>int</code> as far as Esper is concerned).</p>
+
+<h3><code>outputs</code></h3>
+
+<p>In order to push data from Esper back into Storm, you'll need to specify which streams the bolt will emit
+(via <code>onDefaultStream</code> for the default stream which is called <code>default</code>, or via <code>onStream</code> for named streams),
+and also which properties from which event types to emit into these streams (<code>emit</code> method).
+Basic <code>SELECT</code> esper statements (as in the example above) work on a default anonymous event type. Unless you
+tell the builder to use a specific event type (with <code>fromEventType</code>), it will assume this default event type.</p>
+
+<h3><code>statements</code></h3>
+
+<p>This is basically the list of statements to give to Esper. If the Esper statements generate new events
+ (e.g. <code>insert into &lt;name&gt;</code>), then you can use select these via the <code>fromEventType</code> method in the builder
+in order to map them to Storm streams. This allows you to generate more than stream from one Esper bolt.</p>
+
+<h2>How to get</h2>
+
+<p>Use a Maven dependency in your pom.xml:</p>
+
+<pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;org.tomdz.storm&lt;/groupId&gt;
+  &lt;artifactId&gt;storm-esper&lt;/artifactId&gt;
+  &lt;version&gt;0.7.1-SNAPSHOT&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+      </section>
+    </div>
+    <footer>
+      <p>Project maintained by <a href="https://github.com/tomdz">tomdz</a></p>
+      <p>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></p>
+    </footer>
+    <!--[if !IE]><script>fixScale(document);</script><!--<![endif]-->
+    
+  </body>
+</html>
