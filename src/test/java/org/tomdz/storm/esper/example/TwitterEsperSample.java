@@ -17,9 +17,9 @@ public class TwitterEsperSample
         TopologyBuilder builder = new TopologyBuilder();
         TwitterSpout spout = new TwitterSpout(username, pwd);
         EsperBolt bolt = new EsperBolt.Builder()
-                                      .addInputAlias("spout1", "default", "Tweets")
-                                      .setAnonymousOutput("default", "tps", "maxRetweets")
-                                      .addStatement("select count(*) as tps, max(retweetCount) as maxRetweets from Tweets.win:time_batch(1 sec)")
+                                      .inputs().aliasComponent("spout1").toEventType("Tweets")
+                                      .outputs().onDefaultStream().emit("tps", "maxRetweets")
+                                      .statements().add("select count(*) as tps, max(retweetCount) as maxRetweets from Tweets.win:time_batch(1 sec)")
                                       .build();
 
         builder.setSpout("spout1", spout);

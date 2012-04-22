@@ -1,6 +1,7 @@
 package org.tomdz.storm.esper;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,91 +29,244 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
 {
     private static final long serialVersionUID = 1L;
 
-    public static final class Builder
+    public static class Builder
     {
-        private final Map<String, String> inputAliases = new LinkedHashMap<String, String>();
-        private final Map<String, Fields> eventTypeFieldsMap = new LinkedHashMap<String, Fields>();
-        private final Map<String, String> eventTypeStreamIdMap = new LinkedHashMap<String, String>();
-        private final List<String> statements = new ArrayList<String>();
+        protected final EsperBolt bolt;
 
-        public Builder addInputAlias(String componentId, String name)
+        public Builder()
         {
-            return addInputAlias(componentId, "default", name);
+            this(new EsperBolt());
         }
 
-        public Builder addInputAlias(String componentId, String streamId, String name)
+        protected Builder(EsperBolt bolt)
         {
-            inputAliases.put(componentId + "-" + streamId, name);
-            return this;
+            this.bolt = bolt;
         }
 
-        public Builder addNamedOutput(String streamId, String eventTypeName, String... fields)
+        public InputsBuilder inputs()
         {
-            eventTypeFieldsMap.put(eventTypeName, new Fields(fields));
-            eventTypeStreamIdMap.put(eventTypeName, streamId);
-            return this;
+            return new InputsBuilder(bolt);
         }
 
-        public Builder setAnonymousOutput(String streamId, String... fields)
+        public OutputsBuilder outputs()
         {
-            eventTypeFieldsMap.put(null, new Fields(fields));
-            eventTypeStreamIdMap.put(null, streamId);
-            return this;
+            return new OutputsBuilder(bolt);
         }
 
-        public Builder addStatement(String stmt)
+        public StatementsBuilder statements()
         {
-            statements.add(stmt);
-            return this;
+            return new StatementsBuilder(bolt);
         }
 
         public EsperBolt build()
         {
-            return new EsperBolt(inputAliases, eventTypeFieldsMap, eventTypeStreamIdMap, statements);
+            return bolt;
         }
     }
 
-    private final Map<String, String> inputAliases;
-    private final Map<String, Fields> eventTypeFieldsMap;
-    private final Map<String, String> eventTypeStreamIdMap;
-    private final List<String> statements;
+    public static class InputsBuilder extends Builder
+    {
+        private InputsBuilder(EsperBolt bolt)
+        {
+            super(bolt);
+        }
+
+        public AliasedInputBuilder aliasComponent(String componentId)
+        {
+            return new AliasedInputBuilder(bolt, new StreamId(componentId));
+        }
+
+        public AliasedInputBuilder aliasStream(String componentId, String streamId)
+        {
+            return new AliasedInputBuilder(bolt, new StreamId(componentId, streamId));
+        }
+    }
+
+    public static final class AliasedInputBuilder
+    {
+        private final EsperBolt bolt;
+        private final StreamId streamId;
+        private final Map<String, String> fieldTypes;
+
+        private AliasedInputBuilder(EsperBolt bolt, StreamId streamId)
+        {
+            this(bolt, streamId, new HashMap<String, String>());
+        }
+
+        private AliasedInputBuilder(EsperBolt bolt, StreamId streamId, Map<String, String> fieldTypes)
+        {
+            this.bolt = bolt;
+            this.streamId = streamId;
+            this.fieldTypes = fieldTypes;
+        }
+
+        public TypedInputBuilder withField(String fieldNames)
+        {
+            return new TypedInputBuilder(bolt, streamId, fieldTypes, fieldNames);
+        }
+
+        public TypedInputBuilder withFields(String... fieldNames)
+        {
+            return new TypedInputBuilder(bolt, streamId, fieldTypes, fieldNames);
+        }
+
+        public InputsBuilder toEventType(String name)
+        {
+            bolt.addInputAlias(streamId, name, new TupleTypeDescriptor(fieldTypes));
+            return new InputsBuilder(bolt);
+        }
+    }
+
+    public static final class TypedInputBuilder
+    {
+        private final EsperBolt bolt;
+        private final StreamId streamId;
+        private final Map<String, String> fieldTypes;
+        private final String[] fieldNames;
+
+        private TypedInputBuilder(EsperBolt bolt, StreamId streamId, Map<String, String> fieldTypes, String... fieldNames)
+        {
+            this.bolt = bolt;
+            this.streamId = streamId;
+            this.fieldTypes = fieldTypes;
+            this.fieldNames = fieldNames;
+        }
+
+        public AliasedInputBuilder ofType(Class<?> type)
+        {
+            for (String fieldName : fieldNames) {
+                fieldTypes.put(fieldName, type.getName());
+            }
+            return new AliasedInputBuilder(bolt, streamId, fieldTypes);
+        }
+    }
+
+    public static final class OutputsBuilder extends Builder
+    {
+        private OutputsBuilder(EsperBolt bolt)
+        {
+            super(bolt);
+        }
+
+        public OutputStreamBuilder onStream(String streamName)
+        {
+            return new OutputStreamBuilder(bolt, streamName);
+        }
+
+        public OutputStreamBuilder onDefaultStream()
+        {
+            return new OutputStreamBuilder(bolt, "default");
+        }
+    }
+
+    public static final class OutputStreamBuilder
+    {
+        private final EsperBolt bolt;
+        private final String streamName;
+
+        private OutputStreamBuilder(EsperBolt bolt, String streamName)
+        {
+            this.bolt = bolt;
+            this.streamName = streamName;
+        }
+
+        public NamedOutputStreamBuilder fromEventType(String name)
+        {
+            return new NamedOutputStreamBuilder(bolt, streamName, name);
+        }
+
+        public OutputsBuilder emit(String... fields)
+        {
+            bolt.setAnonymousOutput(streamName, fields);
+            return new OutputsBuilder(bolt);
+        }
+    }
+
+    public static final class NamedOutputStreamBuilder
+    {
+        private final EsperBolt bolt;
+        private final String streamName;
+        private final String eventTypeName;
+
+        private NamedOutputStreamBuilder(EsperBolt bolt, String streamName, String eventTypeName)
+        {
+            this.bolt = bolt;
+            this.streamName = streamName;
+            this.eventTypeName = eventTypeName;
+        }
+
+        public OutputsBuilder emit(String... fields)
+        {
+            bolt.addNamedOutput(streamName, eventTypeName, fields);
+            return new OutputsBuilder(bolt);
+        }
+    }
+
+    public static final class StatementsBuilder extends Builder
+    {
+        private StatementsBuilder(EsperBolt bolt)
+        {
+            super(bolt);
+        }
+
+        public StatementsBuilder add(String statement)
+        {
+            bolt.addStatement(statement);
+            return this;
+        }
+    }
+
+    private final Map<StreamId, String> inputAliases = new LinkedHashMap<StreamId, String>();
+    private final Map<StreamId, TupleTypeDescriptor> tupleTypes = new LinkedHashMap<StreamId, TupleTypeDescriptor>();
+    private final Map<String, EventTypeDescriptor> eventTypes = new LinkedHashMap<String, EventTypeDescriptor>();
+    private final List<String> statements = new ArrayList<String>();
     private transient EPServiceProvider esperSink;
     private transient EPRuntime runtime;
     private transient EPAdministrator admin;
     private transient OutputCollector collector;
-    private transient boolean singleEventType;
 
-    private EsperBolt(Map<String, String> inputAliases,
-                      Map<String, Fields> eventTypeFieldsMap,
-                      Map<String, String> eventTypeStreamIdMap,
-                      List<String> statements)
+    private EsperBolt()
     {
-        this.inputAliases = new LinkedHashMap<String, String>(inputAliases);
-        this.eventTypeFieldsMap = new LinkedHashMap<String, Fields>(eventTypeFieldsMap);
-        this.eventTypeStreamIdMap = new LinkedHashMap<String, String>(eventTypeStreamIdMap);
-        this.statements = new ArrayList<String>(statements);
     }
 
-    public List<String> getEventTypes()
+    private void addInputAlias(StreamId streamId, String name, TupleTypeDescriptor typeDesc)
     {
-        return new ArrayList<String>(eventTypeFieldsMap.keySet());
+        inputAliases.put(streamId, name);
+        if (typeDesc != null) {
+            tupleTypes.put(streamId, typeDesc);
+        }
     }
 
-    public Fields getFieldsForEventType(String eventType)
+    private void addNamedOutput(String streamId, String eventTypeName, String... fields)
     {
-        return eventTypeFieldsMap.get(eventType);
+        eventTypes.put(eventTypeName, new EventTypeDescriptor(eventTypeName, fields, streamId));
     }
 
-    public String getStreamIdForEventType(String eventType)
+    private void setAnonymousOutput(String streamId, String... fields)
     {
-        return eventTypeStreamIdMap.get(eventType);
+        eventTypes.put(null, new EventTypeDescriptor(null, fields, streamId));
     }
 
-    public String getEventTypeForStreamId(String streamId)
+    private void addStatement(String stmt)
     {
-        for (Map.Entry<String, String> entry : eventTypeStreamIdMap.entrySet()) {
-            if (streamId.equals(entry.getValue())) {
-                return entry.getKey();
+        statements.add(stmt);
+    }
+
+    public EventTypeDescriptor getEventType(String name)
+    {
+        return eventTypes.get(name);
+    }
+
+    public Collection<EventTypeDescriptor> getEventTypes()
+    {
+        return new ArrayList<EventTypeDescriptor>(eventTypes.values());
+    }
+
+    public EventTypeDescriptor getEventTypeForStreamId(String streamId)
+    {
+        for (EventTypeDescriptor eventType: eventTypes.values()) {
+            if (streamId.equals(eventType.getStreamId())) {
+                return eventType;
             }
         }
         return null;
@@ -121,10 +275,8 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer)
     {
-        for (Map.Entry<String, String> entry : eventTypeStreamIdMap.entrySet()) {
-            Fields fields = eventTypeFieldsMap.get(entry.getKey());
-
-            declarer.declareStream(entry.getValue(), fields);
+        for (EventTypeDescriptor eventType: eventTypes.values()) {
+            declarer.declareStream(eventType.getStreamId(), eventType.getFields());
         }
     }
 
@@ -153,7 +305,7 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
 
     private String getEventTypeName(String componentId, String streamId)
     {
-        String alias = inputAliases.get(componentId + "-" + streamId);
+        String alias = inputAliases.get(new StreamId(componentId, streamId));
 
         if (alias == null) {
             alias = String.format("%s_%s", componentId, streamId);
@@ -164,23 +316,44 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
     private void setupEventTypes(TopologyContext context, Configuration configuration)
     {
         Set<GlobalStreamId> sourceIds = context.getThisSources().keySet();
-        singleEventType = (sourceIds.size() == 1);
 
         for (GlobalStreamId id : sourceIds) {
-            Map<String, Object> props = new LinkedHashMap<String, Object>();
+            String eventTypeName = getEventTypeName(id.get_componentId(), id.get_streamId());
+            Fields fields = context.getComponentOutputFields(id.get_componentId(), id.get_streamId());
+            TupleTypeDescriptor typeDesc = tupleTypes.get(new StreamId(id.get_componentId(), id.get_streamId()));
+            Map<String, Object> props = setupEventTypeProperties(fields, typeDesc);
 
-            setupEventTypeProperties(context.getComponentOutputFields(id.get_componentId(), id.get_streamId()), props);
-            configuration.addEventType(getEventTypeName(id.get_componentId(), id.get_streamId()), props);
+            configuration.addEventType(eventTypeName, props);
         }
     }
 
-    private void setupEventTypeProperties(Fields fields, Map<String, Object> properties)
+    private Map<String, Object> setupEventTypeProperties(Fields fields, TupleTypeDescriptor typeDesc)
     {
+        Map<String, Object> properties = new HashMap<String, Object>();
         int numFields = fields.size();
 
         for (int idx = 0; idx < numFields; idx++) {
-            properties.put(fields.get(idx), Object.class);
+            String fieldName = fields.get(idx);
+            Class<?> clazz = null;
+
+            if (typeDesc != null) {
+                String clazzName = typeDesc.getFieldType(fieldName);
+
+                if (clazzName != null) {
+                    try {
+                        clazz = Class.forName(clazzName);
+                    }
+                    catch (ClassNotFoundException ex) {
+                        throw new RuntimeException("Cannot find class " + clazzName + "declared for field " + fieldName);
+                    }
+                }
+            }
+            if (clazz == null) {
+                clazz = Object.class;
+            }
+            properties.put(fieldName, clazz);
         }
+        return properties;
     }
     
     @Override
@@ -206,18 +379,14 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
     {
         if (newEvents != null) {
             for (EventBean newEvent : newEvents) {
-                String eventType = newEvent.getEventType().getName();
-                String streamId = eventTypeStreamIdMap.get(eventType);
+                EventTypeDescriptor eventType = getEventType(newEvent.getEventType().getName());
 
-                if (streamId == null) {
-                    // anonymous event
-                    eventType = null;
-                    streamId = eventTypeStreamIdMap.get(null);
+                if (eventType == null) {
+                    // anonymous event ?
+                    eventType = getEventType(null);
                 }
-                if (streamId != null) {
-                    Fields fields = eventTypeFieldsMap.get(eventType);
-
-                    collector.emit(streamId, toTuple(newEvent, fields));
+                if (eventType != null) {
+                    collector.emit(eventType.getStreamId(), toTuple(newEvent, eventType.getFields()));
                 }
             }
         }
