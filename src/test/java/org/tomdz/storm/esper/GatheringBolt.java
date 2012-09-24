@@ -9,6 +9,7 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.base.BaseRichBolt;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.TupleImpl;
 
 public class GatheringBolt extends BaseRichBolt
 {
@@ -29,7 +30,7 @@ public class GatheringBolt extends BaseRichBolt
     @Override
     public void execute(Tuple input)
     {
-        Tuple newTuple = new Tuple(context, input.getValues(), input.getSourceTask(), input.getSourceStreamId());
+        Tuple newTuple = new TupleImpl(context, input.getValues(), input.getSourceTask(), input.getSourceStreamId());
 
         tuples.add(newTuple);
     }
