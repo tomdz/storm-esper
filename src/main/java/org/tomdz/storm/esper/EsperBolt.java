@@ -372,6 +372,7 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
         }
 
         runtime.sendEvent(data, eventType);
+        collector.ack(tuple);
     }
 
     @Override

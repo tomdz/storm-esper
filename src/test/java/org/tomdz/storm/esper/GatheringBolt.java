@@ -17,6 +17,7 @@ public class GatheringBolt extends BaseRichBolt
 
     private static final List<Tuple> tuples = new CopyOnWriteArrayList<Tuple>();
     private transient TopologyContext context;
+    private transient OutputCollector collector;
 
     @Override
     public void prepare(@SuppressWarnings("rawtypes") Map stormConf,
@@ -24,6 +25,7 @@ public class GatheringBolt extends BaseRichBolt
                         OutputCollector collector)
     {
         this.context = context;
+        this.collector = collector;
         tuples.clear();
     }
 
@@ -33,6 +35,7 @@ public class GatheringBolt extends BaseRichBolt
         Tuple newTuple = new TupleImpl(context, input.getValues(), input.getSourceTask(), input.getSourceStreamId());
 
         tuples.add(newTuple);
+        collector.ack(input);
     }
 
     public List<Tuple> getGatheredData()
