@@ -164,14 +164,89 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.12.3</version>
         <configuration>
+          <skip>true</skip>
           <systemPropertyVariables>
             <file.encoding>UTF-8</file.encoding>
             <user.timezone>GMT</user.timezone>
           </systemPropertyVariables>
-          <includes>
-            <include>**/*Test.java</include>
-          </includes>
         </configuration>
+        <!-- 
+            Due to a bug with Storm's LocalCluster not getting cleaned up properly 
+            we need to have each test execute in its own JVM, otherwise prior 
+            results come back to mess up the tests which work fine when run individually.
+
+            Please see the comment in StormEsperTest.java
+        -->
+        <executions>
+          <execution>
+            <id>group1</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <skip>false</skip>
+              <groups>1</groups>
+            </configuration>
+          </execution>
+          <execution>
+            <id>group2</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <skip>false</skip>
+              <groups>2</groups>
+            </configuration>
+          </execution>
+          <execution>
+            <id>group3</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <skip>false</skip>
+              <groups>3</groups>
+            </configuration>
+          </execution>
+          <execution>
+            <id>group4</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <skip>false</skip>
+              <groups>4</groups>
+            </configuration>
+          </execution>
+          <execution>
+            <id>group5</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <skip>false</skip>
+              <groups>5</groups>
+            </configuration>
+          </execution>
+          <execution>
+            <id>group6</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <skip>false</skip>
+              <groups>6</groups>
+            </configuration>
+          </execution>
+        </executions>
+ 
+
       </plugin>
       <plugin> 
         <groupId>org.apache.maven.plugins</groupId> 
