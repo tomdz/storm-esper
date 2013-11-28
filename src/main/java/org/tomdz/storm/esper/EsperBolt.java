@@ -14,16 +14,12 @@ import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.TupleImpl;
 import backtype.storm.topology.base.BaseRichBolt;
+import com.espertech.esper.client.*;
+import com.google.common.collect.ImmutableList;
+import java.util.*;
 
-import com.espertech.esper.client.Configuration;
-import com.espertech.esper.client.EPAdministrator;
-import com.espertech.esper.client.EPRuntime;
-import com.espertech.esper.client.EPServiceProvider;
-import com.espertech.esper.client.EPServiceProviderManager;
-import com.espertech.esper.client.EPStatement;
-import com.espertech.esper.client.EventBean;
-import com.espertech.esper.client.UpdateListener;
 
 public class EsperBolt extends BaseRichBolt implements UpdateListener
 {
@@ -224,6 +220,7 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
     private transient EPRuntime runtime;
     private transient EPAdministrator admin;
     private transient OutputCollector collector;
+    private transient TopologyContext context;
 
     private EsperBolt()
     {
@@ -286,6 +283,7 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
                         OutputCollector collector)
     {
         this.collector = collector;
+        this.context = context;
 
         Configuration configuration = new Configuration();
 
@@ -387,12 +385,28 @@ public class EsperBolt extends BaseRichBolt implements UpdateListener
                     eventType = getEventType(null);
                 }
                 if (eventType != null) {
-                    collector.emit(eventType.getStreamId(), toTuple(newEvent, eventType.getFields()));
+                    collector.emit(
+                            eventType.getStreamId(),
+                            createAnchorTuples(eventType),
+                            toTuple(newEvent, eventType.getFields()));
                 }
             }
         }
     }
 
+    private Collection<Tuple> createAnchorTuples(EventTypeDescriptor eventType) {
+        ImmutableList.Builder<Object> builder = ImmutableList.<Object>builder();
+        for (int i = 0; i < eventType.getFields().size(); i++) {
+            builder.add(UUID.randomUUID());
+        }
+        List<Object> tupleObjects = builder.build();
+        Tuple tuple =  new TupleImpl(
+                    this.context,
+                    tupleObjects,
+                    context.getThisTaskId(),
+                    eventType.getStreamId());
+        return  ImmutableList.<Tuple>of(tuple);
+    }
     private List<Object> toTuple(EventBean event, Fields fields)
     {
         int numFields = fields.size();
