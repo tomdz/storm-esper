@@ -21,6 +21,13 @@ import static com.jayway.awaitility.Awaitility.await;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 
+/**
+ * Due to bug with Storm's LocalCluster not getting cleaned up properly we have to run each of the test
+ * methods in this class within a different JVM ( see: https://github.com/nathanmarz/storm/issues/201
+ * for more info.)   Every new test that is added should get a unique group number 'G', and a corresponding
+ * <execution> <groups>G</groups> ... </execution>  entry needs to be put into the surefire configuration
+ * in the  pom.xml,
+ */
 @Test
 public class StormEsperTest
 {
@@ -98,6 +105,7 @@ public class StormEsperTest
         assertEquals(actual, expected);
     }
 
+    @Test(groups = "1")
     @SuppressWarnings("unchecked")
     public void testSimple() throws Exception
     {
@@ -116,6 +124,7 @@ public class StormEsperTest
                 new Event("bolt1A", "default", null, 4, 10));
     }
 
+    @Test(groups = "2")
     @SuppressWarnings("unchecked")
     public void testMultipleStatements() throws Exception
     {
@@ -138,6 +147,7 @@ public class StormEsperTest
                 new Event("bolt2A", "stream2", "MinValue", 1));
     }
 
+    @Test(groups = "3")
     @SuppressWarnings("unchecked")
     public void testMultipleSpouts() throws Exception
     {
@@ -160,6 +170,7 @@ public class StormEsperTest
                 new Event("bolt3A", "default", null, 1, 4));
     }
 
+    @Test(groups = "4")
     @SuppressWarnings("unchecked")
     public void testNoInputAlias() throws Exception
     {
@@ -177,6 +188,7 @@ public class StormEsperTest
                 new Event("bolt4A", "default", null, 1, 4));
     }
 
+    @Test(groups = "5")
     @SuppressWarnings("unchecked")
     public void testMultipleSpoutsWithoutInputAlias() throws Exception
     {
@@ -198,6 +210,7 @@ public class StormEsperTest
                 new Event("bolt5A", "default", null, 1, 4));
     }
 
+    @Test(groups = "6")
     @SuppressWarnings("unchecked")
     public void testMultipleBolts() throws Exception
     {
