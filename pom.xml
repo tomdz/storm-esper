@@ -35,19 +35,19 @@
     <snapshotRepository>
       <id>sonatype-nexus-snapshots</id>
       <name>Sonatype Nexus Snapshots</name>
-      <url>http://oss.sonatype.org/content/repositories/snapshots</url>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
 
     <repository>
       <id>sonatype-nexus-staging</id>
       <name>Nexus Release Repository</name>
-      <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
   </distributionManagement>
   <repositories>
     <repository>
       <id>clojars.org</id>
-      <url>http://clojars.org/repo</url>
+      <url>https://clojars.org/repo</url>
        <releases>
          <enabled>true</enabled>
        </releases>
@@ -58,7 +58,7 @@
     <repository>
        <id>twitter4j.org</id>
        <name>twitter4j.org Repository</name>
-       <url>http://twitter4j.org/maven2</url>
+       <url>https://twitter4j.org/maven2</url>
        <releases>
          <enabled>true</enabled>
        </releases>
